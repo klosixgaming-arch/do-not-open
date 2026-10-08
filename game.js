@@ -160,8 +160,8 @@ function generateMaze() {
                 type = DOOR_EXIT; // First door is always exit
             } else {
                 const roll = Math.random();
-                if (roll < 0.3) type = DOOR_ENEMY;
-                else if (roll < 0.5) type = DOOR_SUPPLY;
+                if (roll < 0.6) type = DOOR_ENEMY; // More patient doors
+                else if (roll < 0.8) type = DOOR_SUPPLY;
                 else type = DOOR_EMPTY;
             }
 
@@ -541,7 +541,7 @@ function updateEnemies(dt) {
                 break;
                 
             case 'chase':
-                moveEnemyToward(enemy, player.x, player.z, dt, 1.5); // Slow but relentless chase
+                moveEnemyToward(enemy, player.x, player.z, dt, 0.3); // Very slow, creeping pace
                 
                 if (dist < 1.5) {
                     showOverlay('CAUGHT!', 'The patient got you. Better luck next time.');
