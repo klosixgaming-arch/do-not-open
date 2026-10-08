@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "Games",
+	"description": "DO NOT OPEN - Co-op horror maze game where every door could be the exit or release something worse.",
+	"Modules": [
+		{
+			"Name": "DoNotOpen",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
