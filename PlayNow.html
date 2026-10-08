@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DO NOT OPEN - Prototype</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <!-- HUD -->
+    <div id="hud">
+        <div id="stamina-bar">
+            <div id="stamina-fill"></div>
+        </div>
+        <div id="battery-bar">
+            <div id="battery-fill"></div>
+        </div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair"></div>
+
+    <!-- Door interaction prompt -->
+    <div id="door-prompt" style="display:none;">Press E to open door</div>
+
+    <!-- Status messages (centered) -->
+    <div id="message-area"></div>
+
+    <!-- Game over / win screen -->
+    <div id="overlay" style="display:none;">
+        <h1 id="overlay-title"></h1>
+        <p id="overlay-message"></p>
+        <button id="restart-btn">Try Again</button>
+    </div>
+
+    <!-- Instructions -->
+    <div id="instructions">
+        <h2>DO NOT OPEN</h2>
+        <p>You're trapped in an abandoned asylum. Find the exit.</p>
+        <p><strong>WASD</strong> - Move | <strong>Mouse</strong> - Look | <strong>E</strong> - Open door</p>
+        <p><strong>Shift</strong> - Sprint (uses stamina) | <strong>F</strong> - Toggle flashlight</p>
+        <p>Every door says DO NOT OPEN. One of them is the exit.</p>
+        <button id="start-btn">Start Game</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

@@ -2,19 +2,21 @@
 
 A cooperative horror maze prototype where every door says "DO NOT OPEN" — but one of them is the exit. Wrong doors release enemies that roam permanently, making each run progressively more dangerous.
 
-## Play Now
+## How to Play
 
-This is a browser-based prototype using Three.js. No installation required!
+This is a browser-based horror maze game. No installation needed!
 
-### Option 1: GitHub Pages (Recommended)
-1. Go to [Settings](https://github.com/klosixgaming-arch/do-not-open/settings/pages) for this repo
-2. Under "Source", select **main** branch, root folder `/`
-3. Click Save — your game will be live at `https://klosixgaming-arch.github.io/do-not-open/`
+### Quick Start (Easiest)
+1. Go to https://github.com/klosixgaming-arch/do-not-open
+2. Click the green **Code** button at the top right
+3. Click **Download ZIP**
+4. Extract/unzip the folder
+5. Double-click `PlayNow.html` — the game opens in your browser!
 
-### Option 2: Local Play
-1. Clone or download the repo
-2. Open `index.html` in any modern browser (Chrome, Firefox, Edge)
-3. That's it!
+That's it! You're playing.
+
+### Share with Friends
+Send them the extracted folder (via email, Google Drive, Dropbox, etc.). They just double-click PlayNow.html on their computer.
 
 ## Controls
 
@@ -39,10 +41,11 @@ This is a browser-based prototype using Three.js. No installation required!
 
 ✅ Procedurally generated maze layout  
 ✅ Randomized door outcomes each run  
-✅ Enemy AI (roam → detect → chase → lose)  
+✅ Enemy AI (emerge → chase → lose)  
 ✅ Flashlight with battery management  
 ✅ Stamina system for sprinting  
 ✅ First-person camera with mouse look  
+✅ Sound effects when opening doors  
 
 ## Roadmap
 

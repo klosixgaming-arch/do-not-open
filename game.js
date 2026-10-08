@@ -37,8 +37,8 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-container').appendChild(renderer.domElement);
 
-    // Flashlight (spotlight)
-    flashlight = new THREE.SpotLight(0xffffff, 1.5, 20, Math.PI / 6, 0.5);
+    // Flashlight (spotlight) - brighter and more effective
+    flashlight = new THREE.SpotLight(0xffffee, 3.0, 25, Math.PI / 5, 0.4);
     flashlight.position.copy(camera.position);
     camera.add(flashlight);
     scene.add(camera);
@@ -246,6 +246,32 @@ function createDoor(gridX, gridY, type) {
     });
 }
 
+let audioContext = null;
+
+function playDoorSound() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    // Create a creepy door creak + thud sound
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Low rumble for the thud
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.3);
+    
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
 function spawnEnemy(gridX, gridY) {
     const worldX = gridX * CELL_SIZE - CELL_SIZE / 2;
     const worldZ = gridY * CELL_SIZE - CELL_SIZE / 2;
@@ -298,7 +324,8 @@ function spawnEnemy(gridX, gridY) {
         mesh: group,
         x: worldX,
         z: worldZ,
-        state: 'chase', // Start chasing immediately when spawned
+        state: 'emerge', // Slowly emerge from the room first
+        emergeTime: Date.now(),
         targetX: null,
         targetZ: null,
         lastSeenPlayer: 0
@@ -347,7 +374,7 @@ function onResize() {
 function updatePlayer(dt) {
     if (!gameActive) return;
 
-    let speed = 3 * dt;
+    let speed = 1.5 * dt; // Slower, more deliberate movement
     let sprinting = keys['shift'] && player.stamina > 0;
     
     if (sprinting) {
@@ -378,13 +405,23 @@ function updatePlayer(dt) {
     let newX = player.x + moveX * speed;
     let newZ = player.z + moveZ * speed;
 
-    // Simple collision with walls
-    const gridX = Math.floor((newX + CELL_SIZE / 2) / CELL_SIZE);
-    const gridY = Math.floor((newZ + CELL_SIZE / 2) / CELL_SIZE);
+    // Improved collision detection - check both X and Z separately
+    // to prevent getting stuck on corners
     
-    if (gridX >= 0 && gridX < MAZE_SIZE && gridY >= 0 && gridY < MAZE_SIZE) {
-        if (maze[gridY][gridX] === 0) {
+    // Try moving in X direction
+    let testX = Math.floor((newX + CELL_SIZE / 2) / CELL_SIZE);
+    let currentY = Math.floor((player.z + CELL_SIZE / 2) / CELL_SIZE);
+    if (testX >= 0 && testX < MAZE_SIZE && currentY >= 0 && currentY < MAZE_SIZE) {
+        if (maze[currentY][testX] === 0) {
             player.x = newX;
+        }
+    }
+    
+    // Try moving in Z direction
+    let currentX = Math.floor((player.x + CELL_SIZE / 2) / CELL_SIZE);
+    let testZ = Math.floor((newZ + CELL_SIZE / 2) / CELL_SIZE);
+    if (currentX >= 0 && currentX < MAZE_SIZE && testZ >= 0 && testZ < MAZE_SIZE) {
+        if (maze[testZ][currentX] === 0) {
             player.z = newZ;
         }
     }
@@ -448,8 +485,12 @@ function openDoor(door) {
             break;
             
         case DOOR_ENEMY:
-            showMessage('Something comes running out of that door!');
-            spawnEnemy(door.gridX, door.gridY);
+            playDoorSound();
+            showMessage('Something stirs in the darkness...');
+            // Delay enemy emergence by 4 seconds
+            setTimeout(() => {
+                spawnEnemy(door.gridX, door.gridY);
+            }, 4000);
             break;
             
         case DOOR_SUPPLY:
@@ -471,6 +512,18 @@ function updateEnemies(dt) {
         const dist = Math.sqrt(dx * dx + dz * dz);
 
         switch (enemy.state) {
+            case 'emerge':
+                // Slowly emerge from the room over 2 seconds
+                if (Date.now() - enemy.emergeTime < 2000) {
+                    // Scale up from nothing to full size
+                    const progress = (Date.now() - enemy.emergeTime) / 2000;
+                    enemy.mesh.scale.set(progress, progress, progress);
+                } else {
+                    enemy.mesh.scale.set(1, 1, 1);
+                    enemy.state = 'chase';
+                }
+                break;
+            
             case 'roam':
                 // Random wandering
                 if (!enemy.targetX || Math.random() < 0.01) {
@@ -576,7 +629,7 @@ document.addEventListener('keydown', (e) => {
             flashlight.intensity = 0;
             showMessage('Flashlight off');
         } else if (player.battery > 0) {
-            flashlight.intensity = 1.5;
+            flashlight.intensity = 3.0;
             showMessage('Flashlight on');
         }
     }

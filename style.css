@@ -46,11 +46,18 @@ body {
     transition: width 0.2s;
 }
 
+/* Status messages - centered on screen */
 #message-area {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     color: #fff;
-    font-size: 14px;
-    text-shadow: 1px 1px 2px #000;
-    max-width: 300px;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px #000;
+    max-width: 400px;
+    text-align: center;
+    z-index: 150;
 }
 
 /* Crosshair */
@@ -58,7 +65,7 @@ body {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50% );
+    transform: translate(-50%, -50%);
     width: 20px;
     height: 20px;
     border: 2px solid rgba(255, 255, 255, 0.5);
