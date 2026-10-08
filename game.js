@@ -12,7 +12,7 @@ let keys = {};
 let mouseDown = false;
 
 // Maze configuration
-const MAZE_SIZE = 7;
+const MAZE_SIZE = 14; // Doubled map size
 const CELL_SIZE = 4;
 const WALL_HEIGHT = 3;
 
@@ -106,13 +106,15 @@ function playBossMusic() {
 
 function generateMaze() {
     // Clear ALL previous scene objects completely
-    while (scene.children.length > 0) {
-        const child = scene.children[0];
+    const toRemove = [];
+    for (let i = 0; i < scene.children.length; i++) {
+        const child = scene.children[i];
         if (child !== camera && child.type !== 'AmbientLight' && child.type !== 'PointLight') {
-            scene.remove(child);
-        } else {
-            break;
+            toRemove.push(child);
         }
+    }
+    for (let obj of toRemove) {
+        scene.remove(obj);
     }
     
     doors = [];
@@ -187,7 +189,7 @@ function generateMaze() {
 
     // Place doors at random floor locations (not on walls)
     let doorCount = 0;
-    const maxDoors = 8;
+    const maxDoors = 16; // More doors for larger map
     
     while (doorCount < maxDoors) {
         const x = Math.floor(Math.random() * (MAZE_SIZE - 2)) + 1;
@@ -200,9 +202,8 @@ function generateMaze() {
                 type = DOOR_EXIT; // First door is always exit
             } else {
                 const roll = Math.random();
-                if (roll < 0.6) type = DOOR_ENEMY; // More patient doors
-                else if (roll < 0.8) type = DOOR_SUPPLY;
-                else type = DOOR_EMPTY;
+                if (roll < 0.9) type = DOOR_ENEMY; // Almost all doors have patients
+                else type = DOOR_SUPPLY;
             }
 
             createDoor(x, y, type);
@@ -384,6 +385,15 @@ function startGame() {
 }
 
 function restartGame() {
+    // Reset music back to nightmare
+    if (bossMusic && !bossMusic.paused) {
+        bossMusic.pause();
+    }
+    if (bgMusic) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log('BG music restart failed:', e));
+    }
+    
     generateMaze();
     player.stamina = 100;
     player.battery = 100;
