@@ -2,7 +2,7 @@
 // Browser-based co-op horror maze prototype using Three.js
 
 let scene, camera, renderer;
-let player = { x: 0, z: 0, rotation: 0, stamina: 100, battery: 100 };
+let player = { x: 0, z: 0, yaw: 0, pitch: 0, stamina: 100, battery: 100 };
 let flashlight;
 let maze = [];
 let doors = [];
@@ -185,41 +185,60 @@ function generateMaze() {
 }
 
 function createDoor(gridX, gridY, type) {
-    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-    const door = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 2.2, 0.1),
-        doorMaterial
-    );
-    
     const worldX = gridX * CELL_SIZE - CELL_SIZE / 2;
     const worldZ = gridY * CELL_SIZE - CELL_SIZE / 2;
+    
+    // Door frame (visible structure)
+    const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x4A3520 });
+    const frameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.4, 0.1), frameMaterial);
+    frameLeft.position.set(worldX - 0.65, 1.2, worldZ);
+    const frameRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.4, 0.1), frameMaterial);
+    frameRight.position.set(worldX + 0.65, 1.2, worldZ);
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 0.1), frameMaterial);
+    frameTop.position.set(worldX, 2.35, worldZ);
+    
+    // Actual door panel
+    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const door = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 2.2, 0.08),
+        doorMaterial
+    );
     door.position.set(worldX, 1.1, worldZ);
     
-    // Add "DO NOT OPEN" sign (simple text via sprite)
+    // DO NOT OPEN sign - make it bigger and more visible
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
+    canvas.width = 512;
+    canvas.height = 128;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 256, 64);
-    ctx.fillStyle = '#ff0000';
-    ctx.font = 'bold 24px Arial';
+    ctx.fillRect(0, 0, 512, 128);
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, 504, 120);
+    ctx.fillStyle = '#cc0000';
+    ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('DO NOT OPEN', 128, 40);
+    ctx.fillText('DO NOT OPEN', 256, 80);
     
     const texture = new THREE.CanvasTexture(canvas);
     const sign = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.5, 0.3),
+        new THREE.PlaneGeometry(1.8, 0.4),
         new THREE.MeshBasicMaterial({ map: texture })
     );
-    sign.position.set(worldX, 2.5, worldZ + 0.06);
+    sign.position.set(worldX, 2.6, worldZ + 0.05);
     
+    scene.add(frameLeft);
+    scene.add(frameRight);
+    scene.add(frameTop);
     scene.add(door);
     scene.add(sign);
 
     doors.push({
         mesh: door,
         sign: sign,
+        frameLeft: frameLeft,
+        frameRight: frameRight,
+        frameTop: frameTop,
         gridX: gridX,
         gridY: gridY,
         type: type,
@@ -228,23 +247,58 @@ function createDoor(gridX, gridY, type) {
 }
 
 function spawnEnemy(gridX, gridY) {
-    const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
-    const enemy = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
-        enemyMaterial
-    );
-    
     const worldX = gridX * CELL_SIZE - CELL_SIZE / 2;
     const worldZ = gridY * CELL_SIZE - CELL_SIZE / 2;
-    enemy.position.set(worldX, 0.6, worldZ);
     
-    scene.add(enemy);
+    // Create a more visible enemy - red humanoid shape
+    const group = new THREE.Group();
+    
+    // Body
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, emissive: 0x330000 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.0, 8), bodyMat);
+    body.position.y = 0.9;
+    group.add(body);
+    
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), bodyMat);
+    head.position.y = 1.55;
+    group.add(head);
+    
+    // Eyes (glowing white)
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
+    leftEye.position.set(-0.1, 1.6, 0.2);
+    group.add(leftEye);
+    const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
+    rightEye.position.set(0.1, 1.6, 0.2);
+    group.add(rightEye);
+    
+    // Arms
+    const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7, 4), bodyMat);
+    leftArm.position.set(-0.4, 1.0, 0);
+    leftArm.rotation.z = 0.3;
+    group.add(leftArm);
+    const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7, 4), bodyMat);
+    rightArm.position.set(0.4, 1.0, 0);
+    rightArm.rotation.z = -0.3;
+    group.add(rightArm);
+    
+    // Legs
+    const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 4), bodyMat);
+    leftLeg.position.set(-0.15, 0.3, 0);
+    group.add(leftLeg);
+    const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 4), bodyMat);
+    rightLeg.position.set(0.15, 0.3, 0);
+    group.add(rightLeg);
+    
+    group.position.set(worldX, 0, worldZ);
+    scene.add(group);
 
     enemies.push({
-        mesh: enemy,
+        mesh: group,
         x: worldX,
         z: worldZ,
-        state: 'roam', // roam, chase, lose
+        state: 'chase', // Start chasing immediately when spawned
         targetX: null,
         targetZ: null,
         lastSeenPlayer: 0
@@ -272,8 +326,16 @@ function restartGame() {
 function onMouseMove(e) {
     if (!gameActive || !document.pointerLockElement) return;
     
-    player.rotation -= e.movementX * 0.002;
-    camera.rotation.y = player.rotation;
+    // Horizontal (yaw)
+    player.yaw -= e.movementX * 0.002;
+    
+    // Vertical (pitch) - clamp to avoid flipping
+    player.pitch -= e.movementY * 0.002;
+    player.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, player.pitch));
+    
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = player.yaw;
+    camera.rotation.x = player.pitch;
 }
 
 function onResize() {
@@ -297,14 +359,14 @@ function updatePlayer(dt) {
     
     player.stamina = Math.max(0, Math.min(100, player.stamina));
 
-    // Calculate movement direction based on camera rotation
+    // Calculate movement direction based on yaw only (not pitch)
     let moveX = 0;
     let moveZ = 0;
     
-    if (keys['w']) { moveX -= Math.sin(player.rotation); moveZ -= Math.cos(player.rotation); }
-    if (keys['s']) { moveX += Math.sin(player.rotation); moveZ += Math.cos(player.rotation); }
-    if (keys['a']) { moveX -= Math.cos(player.rotation); moveZ += Math.sin(player.rotation); }
-    if (keys['d']) { moveX += Math.cos(player.rotation); moveZ -= Math.sin(player.rotation); }
+    if (keys['w']) { moveX -= Math.sin(player.yaw); moveZ -= Math.cos(player.yaw); }
+    if (keys['s']) { moveX += Math.sin(player.yaw); moveZ += Math.cos(player.yaw); }
+    if (keys['a']) { moveX -= Math.cos(player.yaw); moveZ += Math.sin(player.yaw); }
+    if (keys['d']) { moveX += Math.cos(player.yaw); moveZ -= Math.sin(player.yaw); }
 
     // Normalize diagonal movement
     const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -367,8 +429,16 @@ function checkDoorInteraction() {
 function openDoor(door) {
     door.opened = true;
     
-    // Remove door mesh (it's "opened")
-    scene.remove(door.mesh);
+    // Animate door opening - swing it to the side
+    const openAnim = () => {
+        if (door.mesh.rotation.y < Math.PI / 2) {
+            door.mesh.rotation.y += 0.1;
+            requestAnimationFrame(openAnim);
+        }
+    };
+    openAnim();
+    
+    // Remove sign
     scene.remove(door.sign);
 
     switch (door.type) {
@@ -418,7 +488,7 @@ function updateEnemies(dt) {
                 break;
                 
             case 'chase':
-                moveEnemyToward(enemy, player.x, player.z, dt, 2); // Faster when chasing
+                moveEnemyToward(enemy, player.x, player.z, dt, 1.5); // Slow but relentless chase
                 
                 if (dist < 1.5) {
                     showOverlay('CAUGHT!', 'The patient got you. Better luck next time.');
@@ -438,7 +508,7 @@ function updateEnemies(dt) {
                 break;
         }
 
-        enemy.mesh.position.set(enemy.x, 0.6, enemy.z);
+        enemy.mesh.position.set(enemy.x, 0, enemy.z);
     }
 }
 
