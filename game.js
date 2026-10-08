@@ -25,8 +25,8 @@ const DOOR_EMPTY = 'empty';
 function init() {
     // Scene setup
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.Fog(0x111111, 5, 25);
+    scene.background = new THREE.Color(0x0a0a0f);
+    scene.fog = new THREE.Fog(0x0a0a0f, 8, 30);
 
     // Camera (first person)
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -43,9 +43,14 @@ function init() {
     camera.add(flashlight);
     scene.add(camera);
 
-    // Ambient light (very dim)
-    const ambient = new THREE.AmbientLight(0x333333, 0.3);
+    // Lighting - improved visibility
+    const ambient = new THREE.AmbientLight(0x404060, 0.5);
     scene.add(ambient);
+    
+    // Dim overhead light for general visibility
+    const overhead = new THREE.PointLight(0xffaa66, 0.3, 50);
+    overhead.position.set(MAZE_SIZE * CELL_SIZE / 2, WALL_HEIGHT - 0.5, MAZE_SIZE * CELL_SIZE / 2);
+    scene.add(overhead);
 
     // Generate maze
     generateMaze();
@@ -96,8 +101,12 @@ function generateMaze() {
         }
     }
 
-    // Build walls as boxes
-    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x554433, roughness: 0.9 });
+    // Build walls as boxes - more visible colors
+    const wallMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x8B7355,
+        roughness: 0.8,
+        metalness: 0.1
+    });
     
     for (let y = 0; y < MAZE_SIZE; y++) {
         for (let x = 0; x < MAZE_SIZE; x++) {
@@ -112,19 +121,25 @@ function generateMaze() {
         }
     }
 
-    // Floor
+    // Floor - lighter, more visible
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(MAZE_SIZE * CELL_SIZE, MAZE_SIZE * CELL_SIZE),
-        new THREE.MeshStandardMaterial({ color: 0x333322 })
+        new THREE.MeshStandardMaterial({ 
+            color: 0x6B5B45,
+            roughness: 0.9
+        })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.set((MAZE_SIZE * CELL_SIZE) / 2 - CELL_SIZE / 2, 0, (MAZE_SIZE * CELL_SIZE) / 2 - CELL_SIZE / 2);
     scene.add(floor);
 
-    // Ceiling
+    // Ceiling - distinct from floor
     const ceiling = new THREE.Mesh(
         new THREE.PlaneGeometry(MAZE_SIZE * CELL_SIZE, MAZE_SIZE * CELL_SIZE),
-        new THREE.MeshStandardMaterial({ color: 0x222211 })
+        new THREE.MeshStandardMaterial({ 
+            color: 0x4A3F35,
+            roughness: 1.0
+        })
     );
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.set((MAZE_SIZE * CELL_SIZE) / 2 - CELL_SIZE / 2, WALL_HEIGHT, (MAZE_SIZE * CELL_SIZE) / 2 - CELL_SIZE / 2);
