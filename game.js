@@ -81,13 +81,13 @@ function initAudio() {
     if (musicStarted) return;
     
     // Background music - loops at 50% volume
-    bgMusic = new Audio('music/8bit-nightmare.mp3');
+    bgMusic = new Audio('music/8-bit Nightmare.mp3');
     bgMusic.loop = true;
     bgMusic.volume = 0.5;
     bgMusic.play().catch(e => console.log('Audio play failed:', e));
     
     // Boss music - plays when patient found
-    bossMusic = new Audio('music/final-boss.mp3');
+    bossMusic = new Audio('music/The Final Boss.mp3');
     bossMusic.loop = true;
     bossMusic.volume = 0.7;
     
