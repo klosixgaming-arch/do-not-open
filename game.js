@@ -37,8 +37,9 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-container').appendChild(renderer.domElement);
 
-    // Flashlight (spotlight) - brighter and more effective
+    // Flashlight (spotlight)
     flashlight = new THREE.SpotLight(0xffffee, 3.0, 25, Math.PI / 5, 0.4);
+    flashlight.intensity = 0; // Default OFF
     flashlight.position.copy(camera.position);
     camera.add(flashlight);
     scene.add(camera);
@@ -71,10 +72,49 @@ function init() {
     animate();
 }
 
+// Audio management
+let bgMusic = null;
+let bossMusic = null;
+let musicStarted = false;
+
+function initAudio() {
+    if (musicStarted) return;
+    
+    // Background music - loops at 50% volume
+    bgMusic = new Audio('music/8bit-nightmare.mp3');
+    bgMusic.loop = true;
+    bgMusic.volume = 0.5;
+    bgMusic.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Boss music - plays when patient found
+    bossMusic = new Audio('music/final-boss.mp3');
+    bossMusic.loop = true;
+    bossMusic.volume = 0.7;
+    
+    musicStarted = true;
+}
+
+function playBossMusic() {
+    if (!bossMusic) return;
+    // Stop background, start boss music
+    if (bgMusic && !bgMusic.paused) {
+        bgMusic.pause();
+    }
+    bossMusic.currentTime = 0;
+    bossMusic.play().catch(e => console.log('Boss music play failed:', e));
+}
+
 function generateMaze() {
-    // Clear previous maze objects
-    doors.forEach(d => scene.remove(d.mesh));
-    enemies.forEach(e => scene.remove(e.mesh));
+    // Clear ALL previous scene objects completely
+    while (scene.children.length > 0) {
+        const child = scene.children[0];
+        if (child !== camera && child.type !== 'AmbientLight' && child.type !== 'PointLight') {
+            scene.remove(child);
+        } else {
+            break;
+        }
+    }
+    
     doors = [];
     enemies = [];
 
@@ -336,6 +376,9 @@ function startGame() {
     document.getElementById('instructions').style.display = 'none';
     gameActive = true;
     
+    // Start background music
+    initAudio();
+    
     // Lock pointer for mouse look
     renderer.domElement.requestPointerLock();
 }
@@ -487,6 +530,8 @@ function openDoor(door) {
         case DOOR_ENEMY:
             playDoorSound();
             showMessage('Something stirs in the darkness...');
+            // Play boss music when patient found
+            playBossMusic();
             // Delay enemy emergence by 4 seconds
             setTimeout(() => {
                 spawnEnemy(door.gridX, door.gridY);
@@ -541,7 +586,7 @@ function updateEnemies(dt) {
                 break;
                 
             case 'chase':
-                moveEnemyToward(enemy, player.x, player.z, dt, 0.3); // Very slow, creeping pace
+                moveEnemyToward(enemy, player.x, player.z, dt, 0.12); // 12% speed - very slow creep
                 
                 if (dist < 1.5) {
                     showOverlay('CAUGHT!', 'The patient got you. Better luck next time.');
@@ -572,8 +617,37 @@ function moveEnemyToward(enemy, targetX, targetZ, dt, speedMultiplier) {
     
     if (dist > 0.1) {
         const speed = 2 * dt * speedMultiplier;
-        enemy.x += (dx / dist) * speed;
-        enemy.z += (dz / dist) * speed;
+        
+        // Try to move toward player, but check for wall collisions
+        let newX = enemy.x + (dx / dist) * speed;
+        let newZ = enemy.z + (dz / dist) * speed;
+        
+        // Check X movement
+        let testXGrid = Math.floor((newX + CELL_SIZE / 2) / CELL_SIZE);
+        let currentYGrid = Math.floor((enemy.z + CELL_SIZE / 2) / CELL_SIZE);
+        if (testXGrid >= 0 && testXGrid < MAZE_SIZE && currentYGrid >= 0 && currentYGrid < MAZE_SIZE) {
+            if (maze[currentYGrid][testXGrid] === 0) {
+                enemy.x = newX;
+            } else {
+                // Wall in X direction, try moving only in Z
+                let testZGrid = Math.floor((newZ + CELL_SIZE / 2) / CELL_SIZE);
+                let currentXGrid = Math.floor((enemy.x + CELL_SIZE / 2) / CELL_SIZE);
+                if (currentXGrid >= 0 && currentXGrid < MAZE_SIZE && testZGrid >= 0 && testZGrid < MAZE_SIZE) {
+                    if (maze[testZGrid][currentXGrid] === 0) {
+                        enemy.z = newZ;
+                    }
+                }
+            }
+        } else {
+            // Out of bounds in X, try Z only
+            let testZGrid = Math.floor((newZ + CELL_SIZE / 2) / CELL_SIZE);
+            let currentXGrid = Math.floor((enemy.x + CELL_SIZE / 2) / CELL_SIZE);
+            if (currentXGrid >= 0 && currentXGrid < MAZE_SIZE && testZGrid >= 0 && testZGrid < MAZE_SIZE) {
+                if (maze[testZGrid][currentXGrid] === 0) {
+                    enemy.z = newZ;
+                }
+            }
+        }
     }
 }
 
